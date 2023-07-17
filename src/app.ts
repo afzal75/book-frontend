@@ -14,7 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/v1/", AuthRoutes);
 
 app.get("/", (req, res) => {
-  res.send("Hello World!");
+  res.send("Heello World!");
 });
 
 app.use(globalErrorHandler)
