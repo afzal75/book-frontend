@@ -1,26 +1,46 @@
-import config from "../../../config";
+import httpStatus from "http-status";
 import ApiError from "../../../errors/ApiError";
-import { IUser } from "./auth.interface";
-import { AuthUser } from "./auth.model";
+import { ILoginUser, ILoginUserResponse, IUser } from "./auth.interface";
+import { User } from "./auth.model";
+import config from "../../../config";
+import { Secret } from "jsonwebtoken";
+import { jwtHelpers } from "../../../helpers/jwtHelpers";
 
-const createUser = async (user: IUser): Promise<IUser | any> => {
-  // default password
+const loginUser = async (payload: ILoginUser): Promise<ILoginUserResponse> => {
+  const { email, password } = payload;
 
-  if (!user.password) {
-    user.password = config.default_user_password as string;
+  const isUserExist = await User.isUserExist(email);
+  if (!isUserExist) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User does not exist", '');
   }
-  const createdUser = await AuthUser.create(user);
 
-  if(user.role === 'seller'){
-    user.income = 0
+  // match password
+  if (
+    isUserExist.password &&
+    !(await User.isPasswordMatched(password, isUserExist.password))
+  ) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, "Password is incorrect", '');
   }
 
-  if (!createdUser) {
-    throw new ApiError(400, "Failed Create User", "");
-  }
-  return createdUser;
+  const { email: userEmail, name } = isUserExist;
+  const accessToken = jwtHelpers.createToken(
+    { userEmail, name },
+    config.jwt.secret as Secret,
+    config.jwt.expires_in as string
+  );
+
+  return {
+    accessToken,
+    user: {email, name},
+  };
+};
+
+const signupUser = async (payload: IUser): Promise<IUser | null> => {
+  const result = await User.create(payload);
+  return result;
 };
 
 export const AuthService = {
-  createUser,
+  loginUser,
+  signupUser,
 };

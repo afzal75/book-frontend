@@ -1,12 +1,8 @@
 import express, { Application, NextFunction, Request, Response } from "express";
 import cors from "cors";
 import httpStatus from "http-status";
-// import { UserRoutes } from "./app/modules/auth/auth.route";
 import globalErrorHandler from "./app/middleware/globalErrorHandler";
-import { UserRoutes } from "./app/modules/user/user.route";
 import { AuthRoutes } from "./app/modules/auth/auth.route";
-import { CowRoutes } from "./app/modules/cow/cow.route";
-import { OrderRoutes } from "./app/modules/order/order.route";
 const app: Application = express();
 app.use(cors());
 
@@ -15,12 +11,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Application routes
-
-app.use("/api/v1", UserRoutes);
-app.use("/api/v1", AuthRoutes);
-app.use("/api/v1", CowRoutes);
-app.use("/api/v1", OrderRoutes);
+app.use("/api/v1/", AuthRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello World!");

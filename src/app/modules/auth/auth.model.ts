@@ -1,46 +1,23 @@
 import { Schema, model } from "mongoose";
-import { IUser } from "./auth.interface";
-import { UserRole } from "../../../enums/cow";
+import { IUser, UserModel } from "./auth.interface";
+import bcrypt from "bcrypt";
+import config from "../../../config";
 
-const userSchema = new Schema<IUser>(
+const UserSchema = new Schema<IUser, UserModel>(
   {
-    role: {
+    name: {
       type: String,
       required: true,
-      enum: Object.values(UserRole),
     },
-    phoneNumber: {
+    email: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
     },
     password: {
       type: String,
-    },
-    name: {
-        type: {
-          firstName: {
-            type: String,
-            required: true,
-          },
-          lastName: {
-            type: String,
-            required: true,
-          },
-        },
-        required: true,
-      },
-    address: {
-      type: String,
-      required: true
-    },
-    budget: {
-      type: Number,
-      required: true
-    },
-    income: {
-      type: Number,
-      required: true
+      required: true,
+      select: 0,
     },
   },
   {
@@ -51,6 +28,27 @@ const userSchema = new Schema<IUser>(
   }
 );
 
-// Create and export the User model
-export const AuthUser = model<IUser>('User', userSchema)
+UserSchema.statics.isUserExist = async function (
+  email: string
+): Promise<IUser | null> {
+  return await User.findOne({ email }, { name: 1, password: 1, email: 1 });
+};
 
+UserSchema.statics.isPasswordMatched = async function (
+  givenPassword: string,
+  savePassword: string
+): Promise<boolean> {
+  return await bcrypt.compare(givenPassword, savePassword);
+};
+
+UserSchema.pre("save", async function (next) {
+  // hashing user password
+  const user = this;
+  user.password = await bcrypt.hash(
+    user.password,
+    Number(config.bcrypt_salt_rounds)
+  );
+  next();
+});
+
+export const User = model<IUser, UserModel>("User", UserSchema);
